@@ -43,7 +43,7 @@ export async function registerUser(input: RegisterInput) {
   .returning()
 
   // Queue welcome email — non-blocking, doesn't affect response time
-  await emailQueue.add('welcone', {
+  await emailQueue.add('welcome', {
     type: 'welcome',
     to: newUser.email,
     username: newUser.username,
@@ -114,5 +114,18 @@ export async function getMe(userId: string) {
   if (!user) throw new AppError('User not found', 404);
 
   const { passwordHash: _, ...userWithoutPassword } = user;
+  return userWithoutPassword;
+}
+
+export async function updateAvatar(userId: string, avatarUrl: string) {
+  const [updated] = await db
+  .update(users)
+  .set({avatarUrl, updatedAt: new Date()})
+  .where(eq(users.id, userId))
+  .returning();
+
+  if(!updated) throw new AppError('User not found', 404);
+
+  const { passwordHash: _, ...userWithoutPassword } = updated;
   return userWithoutPassword;
 }

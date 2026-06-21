@@ -1,7 +1,9 @@
 import { eq, and, sql, asc, desc, count } from 'drizzle-orm';
 import { db } from '../../db';
 import { projects, issues, issueComments, workspaceMembers, workspaces } from '../../db/schema';
+import type { Issue } from '../../db/schema';
 import { AppError } from '../../utils/AppError';
+import { getCache, setCache, deleteCache, CacheKeys, TTL } from '../../utils/cache';
 import type {
   CreateProjectInput,
   CreateIssueInput,
@@ -152,6 +154,15 @@ export async function listIssues(
 };
 
 export async function getIssueById(issueId: string, workspaceId: string) {
+  // check cache first
+  const cacheKey = CacheKeys.issue(issueId);
+  const cached = await getCache<Issue>(cacheKey);
+  if(cached) {
+    console.log('cache hit: issue');
+    return cached;
+  }
+
+
   const issue = await db.query.issues.findFirst({
     where: and(
       eq(issues.id, issueId),
@@ -176,6 +187,10 @@ export async function getIssueById(issueId: string, workspaceId: string) {
   });
 
   if (!issue) throw new AppError('Issue not found', 404);
+  
+  // cache the result
+  await setCache(cacheKey, issue, TTL.MEDIUM);
+  
   return issue;
 
 };
@@ -197,6 +212,10 @@ export async function updateIssue(issueId: string, workspaceId: string, input: U
                             })
                             .where(eq(issues.id, issueId))
                             .returning()
+  
+  // bust issue cache so next fetch is fresh
+  await deleteCache(CacheKeys.issue(issueId));
+  
   return updated;
 
 };
@@ -212,6 +231,10 @@ export async function deleteIssue(issueId: string, workspaceId: string) {
   if(!issue) throw new AppError('Issue not found', 404);
   
   await db.delete(issues).where(eq(issues.id, issueId));
+  
+  // bust cache
+  await deleteCache(CacheKeys.issue(issueId));
+  
   return { message: 'Issue deleted' };
 
 };

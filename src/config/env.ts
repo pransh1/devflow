@@ -34,4 +34,9 @@ export const config = {
     pass: process.env.SMTP_PASS || '',
     from: process.env.EMAIL_FROM || 'DevFlow <noreply@devflow.com>', 
   },
+  cloudinary: {
+    cloudName: requireEnv('CLOUDINARY_CLOUD_NAME'),
+    apiKey: requireEnv('CLOUDINARY_API_KEY'),
+    apiSecret: requireEnv('CLOUDINARY_API_SECRET'),
+  },
 } as const;

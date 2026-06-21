@@ -2,6 +2,7 @@ import { relations } from 'drizzle-orm';
 import { users } from './users';
 import { workspaces, workspaceMembers } from './workspaces';
 import { projects } from './projects';
+import { attachments } from './attachments';
 import { issues, issueComments } from './issues';
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -10,6 +11,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   assignedIssues: many(issues, { relationName: 'assignee' }),
   createdIssues: many(issues, { relationName: 'creator' }),
   comments: many(issueComments),
+  uploadedAttachments: many(attachments),
 }));
 
 export const workspacesRelations = relations(workspaces, ({ one, many }) => ({
@@ -65,6 +67,7 @@ export const issuesRelations = relations(issues, ({ one, many }) => ({
     relationName: 'creator',
   }),
   comments: many(issueComments),
+  attachments: many(attachments),
 }));
 
 export const issueCommentsRelations = relations(issueComments, ({ one }) => ({
@@ -74,6 +77,17 @@ export const issueCommentsRelations = relations(issueComments, ({ one }) => ({
   }),
   author: one(users, {
     fields: [issueComments.authorId],
+    references: [users.id],
+  }),
+}));
+
+export const attachmentsRelations = relations(attachments, ({one}) => ({
+  issue: one(issues, {
+    fields: [attachments.issueId],
+    references: [issues.id]
+  }),
+  uploadedBy: one(users, {
+    fields: [attachments.uploadedById],
     references: [users.id],
   }),
 }));

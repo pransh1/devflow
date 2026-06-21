@@ -2,11 +2,23 @@ import app from './app';
 import { config } from './config/env';
 import { checkDbConnection } from './db';
 import redis from './config/redis';
+import { createEmailWorker } from './queues/email.worker';
 
 async function bootstrap(): Promise<void> {
   try {
     await checkDbConnection();
     await redis.connect();
+
+    // start background worker
+    const emailWorker = createEmailWorker();
+    console.log('⚙️  Email worker started');
+
+    // graceful shut down - drain worker before exit
+    process.on('SIGTERM', async () => {
+      console.log('shutting down.....');
+      await emailWorker.close();
+      process.exit(0);
+    })
     
     app.listen(config.port, () => {
       console.log(`🚀 DevFlow API running on http://localhost:${config.port}`);

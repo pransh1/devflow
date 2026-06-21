@@ -2,7 +2,21 @@ import { eq, and } from 'drizzle-orm';
 import { db } from '../../db';
 import { workspaces, workspaceMembers, users } from '../../db/schema';
 import { AppError } from '../../utils/AppError';
+import { getCache, setCache, deleteCache, CacheKeys, TTL } from '../../utils/cache';
 import type { CreateWorkspaceInput, InviteMemberInput } from './workspace.schema';
+
+type WorkspaceWithRole = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  logoUrl: string | null;
+  ownerId: string;
+  createdAt: Date;
+  updatedAt: Date;
+  role: 'owner' | 'admin' | 'member';
+  joinedAt: Date;
+};
 
 // creating workspace 
 export async function createWorkspace(input: CreateWorkspaceInput, ownerId: string) {
@@ -30,7 +44,10 @@ export async function createWorkspace(input: CreateWorkspaceInput, ownerId: stri
 
     return workspace;
   });
-
+  
+  // Bust this user's workspace list cache
+  await deleteCache(CacheKeys.userWorkspaces(ownerId));
+  
   return result;
 
 };
@@ -38,6 +55,14 @@ export async function createWorkspace(input: CreateWorkspaceInput, ownerId: stri
 
 // Get all workspaces this user is a member of
 export async function getMyWorkspaces(userId: string) {
+  // Check cache first
+  const cacheKey = CacheKeys.userWorkspaces(userId);
+  const cached = await getCache<WorkspaceWithRole[]>(cacheKey);
+  if(cached) {
+    console.log('cache hit: userWorkspaces');
+    return cached;
+  }
+
   const memberships = await db.query.workspaceMembers.findMany({
     where: eq(workspaceMembers.userId, userId),
     with: {
@@ -46,13 +71,17 @@ export async function getMyWorkspaces(userId: string) {
   });
 
   // Filter out any memberships where workspace somehow doesn't exist
-  return memberships
+  const result = memberships
     .filter((m) => m.workspace !== null)
     .map((m) => ({
       ...m.workspace!,  
       role: m.role,
       joinedAt: m.joinedAt,
     }));
+
+  // Store in cache
+  await setCache(cacheKey, result, TTL.LONG);
+  return result;
 };
 
 
@@ -117,6 +146,12 @@ export async function inviteMember(
                       userId: userToInvite.id,
                       role: input.role,
                     }).returning()
+    
+  // Bust both user's workspace caches + members list
+  await Promise.all([
+    deleteCache(CacheKeys.userWorkspaces(userToInvite.id)),
+    deleteCache(CacheKeys.workspaceMembers(workspaceId)),
+  ]);      
 
   return member;
 
@@ -133,6 +168,14 @@ export async function getWorkspaceMembers(workspaceId: string, requesterId: stri
 
   if (!membership) throw new AppError('You are not a member of this workspace', 403);
 
+  // Cache members list
+  const cacheKey = CacheKeys.workspaceMembers(workspaceId);
+  const cached = await getCache<unknown[]>(cacheKey);
+  if (cached) {
+    console.log('cache hit: workspaceMembers');
+    return cached;
+  }
+
   const members = await db.query.workspaceMembers.findMany({
     where: eq(workspaceMembers.workspaceId, workspaceId),
     with: {
@@ -148,6 +191,7 @@ export async function getWorkspaceMembers(workspaceId: string, requesterId: stri
     },
   });
 
+  await setCache(cacheKey, members, TTL.LONG);
   return members;
 
 };
@@ -186,6 +230,12 @@ export async function removeMember(
             eq(workspaceMembers.userId, targetUserId)
           )
         );
+
+  // Bust caches
+  await Promise.all([
+    deleteCache(CacheKeys.userWorkspaces(targetUserId)),
+    deleteCache(CacheKeys.workspaceMembers(workspaceId)),
+  ]);
 
   return { message: 'Member removed' };
 };

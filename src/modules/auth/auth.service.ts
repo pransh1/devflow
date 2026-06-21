@@ -6,6 +6,7 @@ import { db } from '../../db';
 import { users } from '../../db/schema';
 import { AppError } from '../../utils/AppError';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../../utils/jwt';
+import { emailQueue } from '../../queues/email.queue';
 import type { RegisterInput, LoginInput } from './auth.schema';
 
 // register user
@@ -41,6 +42,12 @@ export async function registerUser(input: RegisterInput) {
   })
   .returning()
 
+  // Queue welcome email — non-blocking, doesn't affect response time
+  await emailQueue.add('welcone', {
+    type: 'welcome',
+    to: newUser.email,
+    username: newUser.username,
+  });
 
   // generate token
   const accessToken = generateAccessToken({userId: newUser.id, email: newUser.email});

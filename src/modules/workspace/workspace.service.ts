@@ -4,6 +4,7 @@ import { workspaces, workspaceMembers, users } from '../../db/schema';
 import { AppError } from '../../utils/AppError';
 import { getCache, setCache, deleteCache, CacheKeys, TTL } from '../../utils/cache';
 import type { CreateWorkspaceInput, InviteMemberInput } from './workspace.schema';
+import { emailQueue } from '../../queues/email.queue';
 
 type WorkspaceWithRole = {
   id: string;
@@ -146,6 +147,21 @@ export async function inviteMember(
                       userId: userToInvite.id,
                       role: input.role,
                     }).returning()
+
+  // get workspace name and inviter name for the email
+  const [workspace, inviter] = await Promise.all([
+    db.query.workspaces.findFirst({ where: eq(workspaces.id, workspaceId) }),
+    db.query.users.findFirst({ where: eq(users.id, requesterId) })
+  ]);
+
+  // queue invite email
+  await emailQueue.add('invite', {
+    type: 'invite',
+    to: userToInvite.email,
+    inviteeName: userToInvite.fullName || userToInvite.username,
+    workspaceName: workspace!.name,
+    inviterName: inviter!.fullName || inviter!.username, 
+  });
     
   // Bust both user's workspace caches + members list
   await Promise.all([

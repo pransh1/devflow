@@ -5,6 +5,7 @@ import { AppError } from '../../utils/AppError';
 import { getCache, setCache, deleteCache, CacheKeys, TTL } from '../../utils/cache';
 import type { CreateWorkspaceInput, InviteMemberInput } from './workspace.schema';
 import { emailQueue } from '../../queues/email.queue';
+import { emitToWorkspace } from '../../socket';
 
 type WorkspaceWithRole = {
   id: string;
@@ -167,7 +168,15 @@ export async function inviteMember(
   await Promise.all([
     deleteCache(CacheKeys.userWorkspaces(userToInvite.id)),
     deleteCache(CacheKeys.workspaceMembers(workspaceId)),
-  ]);      
+  ]);     
+  
+  // Notify workspace of new member
+  emitToWorkspace(workspaceId, 'workspace:member_joined', {
+    userId: userToInvite.id,
+    email: userToInvite.email,
+    username: userToInvite.username,
+    role: input.role,
+  });
 
   return member;
 
@@ -252,6 +261,11 @@ export async function removeMember(
     deleteCache(CacheKeys.userWorkspaces(targetUserId)),
     deleteCache(CacheKeys.workspaceMembers(workspaceId)),
   ]);
+
+  // Notify workspace of removed member
+  emitToWorkspace(workspaceId, 'workspace:member_left', {
+    userId: targetUserId,
+  });
 
   return { message: 'Member removed' };
 };

@@ -15,9 +15,13 @@ const app: Application = express();
 
 // security & parsing middleware
 app.use(helmet());
+// app.use(cors({
+//   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+//   credentials: true,
+// }));
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true,
+  origin: config.nodeEnv === 'development' ? '*' : (process.env.FRONTEND_URL || 'http://localhost:3000'),
+  credentials: config.nodeEnv !== 'development',
 }));
 
 app.use(express.json({limit: '10mb'}));

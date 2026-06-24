@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>DevFlow Socket Test</title>
+  <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+  <style>
+    body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #00ff00; }
+    #log { border: 1px solid #333; padding: 10px; height: 400px; overflow-y: scroll; margin-top: 10px; }
+    input, button { padding: 8px; margin: 4px; background: #333; color: white; border: 1px solid #555; }
+    button { cursor: pointer; }
+    button:hover { background: #444; }
+  </style>
+</head>
+<body>
+  <h2>DevFlow Socket.io Test</h2>
+
+  <div>
+    <input id="token" placeholder="Paste your accessToken here" style="width: 500px" />
+    <button onclick="connect()">Connect</button>
+    <button onclick="disconnect()">Disconnect</button>
+  </div>
+
+  <div>
+    <input id="workspaceId" placeholder="Workspace ID" style="width: 300px" />
+    <button onclick="joinWorkspace()">Join Workspace</button>
+    <button onclick="leaveWorkspace()">Leave Workspace</button>
+  </div>
+
+  <div id="log"></div>
+
+  <script>
+    let socket;
+
+    function log(msg, color = '#00ff00') {
+      const div = document.getElementById('log');
+      const time = new Date().toLocaleTimeString();
+      div.innerHTML += `<div style="color:${color}">[${time}] ${JSON.stringify(msg)}</div>`;
+      div.scrollTop = div.scrollHeight;
+    }
+
+    function connect() {
+      const token = document.getElementById('token').value;
+      if (!token) return log('⚠️ Paste a token first', '#ffff00');
+
+      socket = io('http://127.0.0.1:5454', {  // ✅ match the browser's origin
+      auth: { token },
+      transports: ['websocket', 'polling'],  // ✅ explicitly set transports
+    });
+
+      socket.on('connect', () => log('✅ Connected! Socket ID: ' + socket.id, '#00ff00'));
+      socket.on('connect_error', (err) => log('❌ Connection error: ' + err.message, '#ff0000'));
+      socket.on('disconnect', () => log('🔌 Disconnected', '#ffff00'));
+
+      // Workspace events
+      socket.on('workspace:joined', (data) => log('🏢 Joined workspace: ' + JSON.stringify(data), '#00ffff'));
+      socket.on('workspace:member_joined', (data) => log('👤 Member joined: ' + JSON.stringify(data), '#00ffff'));
+      socket.on('workspace:member_left', (data) => log('👤 Member left: ' + JSON.stringify(data), '#ff8800'));
+
+      // Presence events
+      socket.on('presence:user_online', (data) => log('🟢 User online: ' + JSON.stringify(data), '#00ff88'));
+      socket.on('presence:user_offline', (data) => log('🔴 User offline: ' + JSON.stringify(data), '#ff4444'));
+
+      // Issue events
+      socket.on('issue:created', (data) => log('✨ Issue created: ' + JSON.stringify(data), '#88ff00'));
+      socket.on('issue:updated', (data) => log('✏️ Issue updated: ' + JSON.stringify(data), '#ffff00'));
+      socket.on('issue:deleted', (data) => log('🗑️ Issue deleted: ' + JSON.stringify(data), '#ff4444'));
+
+      // Comment events
+      socket.on('comment:created', (data) => log('💬 Comment added: ' + JSON.stringify(data), '#00ffff'));
+      socket.on('comment:typing', (data) => log('⌨️ Typing: ' + JSON.stringify(data), '#888888'));
+
+      // Errors
+      socket.on('error', (data) => log('⚠️ Error: ' + JSON.stringify(data), '#ff0000'));
+    }
+
+    function disconnect() {
+      if (socket) socket.disconnect();
+    }
+
+    function joinWorkspace() {
+      const workspaceId = document.getElementById('workspaceId').value;
+      if (!socket || !workspaceId) return log('⚠️ Connect and enter workspace ID first', '#ffff00');
+      socket.emit('workspace:join', workspaceId);
+      log('📤 Sent workspace:join for ' + workspaceId, '#888888');
+    }
+
+    function leaveWorkspace() {
+      const workspaceId = document.getElementById('workspaceId').value;
+      if (!socket) return;
+      socket.emit('workspace:leave', workspaceId);
+      log('📤 Sent workspace:leave', '#888888');
+    }
+  </script>
+</body>
+</html>

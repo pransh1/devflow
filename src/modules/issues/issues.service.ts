@@ -3,6 +3,7 @@ import { db } from '../../db';
 import { projects, issues, issueComments, workspaceMembers, workspaces } from '../../db/schema';
 import type { Issue } from '../../db/schema';
 import { AppError } from '../../utils/AppError';
+import { emitToWorkspace } from '../../socket';
 import { getCache, setCache, deleteCache, CacheKeys, TTL } from '../../utils/cache';
 import type {
   CreateProjectInput,
@@ -100,6 +101,12 @@ export async function createIssue(
     createdById: userId, 
     dueDate: input.dueDate ? new Date(input.dueDate) : undefined, 
   }).returning();
+
+  // Emit to all workspace members in real-time
+  emitToWorkspace(workspaceId, 'issue:created', {
+    issue,
+    createdBy: userId,
+  });
 
   return issue;
 };
@@ -215,6 +222,12 @@ export async function updateIssue(issueId: string, workspaceId: string, input: U
   
   // bust issue cache so next fetch is fresh
   await deleteCache(CacheKeys.issue(issueId));
+
+  // Emit update to workspace
+  emitToWorkspace(workspaceId, 'issue:updated', {
+    issue: updated,
+    updatedBy: workspaceId,
+  });
   
   return updated;
 
@@ -234,6 +247,12 @@ export async function deleteIssue(issueId: string, workspaceId: string) {
   
   // bust cache
   await deleteCache(CacheKeys.issue(issueId));
+
+  // Emit deletion to workspace
+  emitToWorkspace(workspaceId, 'issue:deleted', {
+    issueId,
+    workspaceId,
+  });
   
   return { message: 'Issue deleted' };
 
@@ -261,6 +280,16 @@ export async function addComment(
     .insert(issueComments)
     .values({ issueId, authorId, content })
     .returning();
+
+  // bust issue cache since comments changed
+  await deleteCache(CacheKeys.issue(issueId));
+
+  // Emit new comment to workspace
+  emitToWorkspace(workspaceId, 'comment:created', {
+    comment,
+    issueId,
+    workspaceId,
+  });
 
   return comment;
 

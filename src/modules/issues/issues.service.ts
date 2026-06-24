@@ -147,7 +147,7 @@ export async function listIssues(
       total: total[0].count,
       page,
       limit,
-      totalPage: Math.ceil(total[0].count / limit)
+      totalPages: Math.ceil(total[0].count / limit)
     },
   };
 

@@ -4,6 +4,7 @@ import { workspaces, workspaceMembers, users } from '../../db/schema';
 import { AppError } from '../../utils/AppError';
 import { getCache, setCache, deleteCache, CacheKeys, TTL } from '../../utils/cache';
 import type { CreateWorkspaceInput, InviteMemberInput } from './workspace.schema';
+import { channels, channelMembers } from '../../db/schema';
 import { emailQueue } from '../../queues/email.queue';
 import { emitToWorkspace } from '../../socket';
 
@@ -37,11 +38,27 @@ export async function createWorkspace(input: CreateWorkspaceInput, ownerId: stri
                               .insert(workspaces)
                               .values({...input, ownerId})
                               .returning();
-    
+    // Add creator as owner
     await tx.insert(workspaceMembers).values({
       workspaceId: workspace.id,
       userId: ownerId,
       role: 'owner',
+    });
+
+    // Auto-create #general channel
+    const [generalChannel] = await tx.insert(channels)
+                                  .values({
+                                    workspaceId: workspace.id,
+                                    name: 'general',
+                                    description: 'General discussion',
+                                    isDefault: true,
+                                    createdById: ownerId,
+                                  })
+                                  .returning()
+    // Add creator to #general
+    await tx.insert(channelMembers).values({
+      channelId: generalChannel.id,
+      userId: ownerId,
     });
 
     return workspace;

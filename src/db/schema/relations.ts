@@ -4,6 +4,7 @@ import { workspaces, workspaceMembers } from './workspaces';
 import { projects } from './projects';
 import { attachments } from './attachments';
 import { issues, issueComments } from './issues';
+import { channels, channelMembers, channelMessages } from './channels';
 
 export const usersRelations = relations(users, ({ many }) => ({
   workspaceMemberships: many(workspaceMembers),
@@ -12,6 +13,8 @@ export const usersRelations = relations(users, ({ many }) => ({
   createdIssues: many(issues, { relationName: 'creator' }),
   comments: many(issueComments),
   uploadedAttachments: many(attachments),
+  channelMemberships: many(channelMembers),
+  channelMessages: many(channelMessages),
 }));
 
 export const workspacesRelations = relations(workspaces, ({ one, many }) => ({
@@ -22,6 +25,7 @@ export const workspacesRelations = relations(workspaces, ({ one, many }) => ({
   members: many(workspaceMembers),
   projects: many(projects),
   issues: many(issues),
+  channels: many(channels),
 }));
 
 export const workspaceMembersRelations = relations(workspaceMembers, ({ one }) => ({
@@ -90,4 +94,47 @@ export const attachmentsRelations = relations(attachments, ({one}) => ({
     fields: [attachments.uploadedById],
     references: [users.id],
   }),
+}));
+
+export const channelsRelations = relations(channels, ({one, many}) => ({
+  workspace: one(workspaces, {
+    fields: [channels.workspaceId],
+    references: [workspaces.id]
+  }),
+
+  createdBy: one(users, {
+    fields: [channels.createdById],
+    references: [users.id]
+  }),
+  members: many(channelMembers),
+  messages: many(channelMessages),
+}));
+
+export const channelMembersRelations = relations(channelMembers, ({one, many}) => ({
+  channel: one(channels, {
+    fields: [channelMembers.channelId],
+    references: [channels.id]
+  }),
+  users: one(users, {
+    fields: [channelMembers.userId],
+    references: [users.id],
+  }),
+}));
+
+export const channelMessagesRelations = relations(channelMessages, ({one, many}) => ({
+  channel: one(channels, {
+    fields: [channelMessages.channelId],
+    references: [channels.id],
+  }),
+  author: one(users, {
+    fields: [channelMessages.authorId],
+    references: [users.id],
+  }),
+  // self-referential — thread replies point to parent
+  parent: one(channelMessages, {
+    fields: [channelMessages.parentId],
+    references: [channelMessages.id],
+    relationName: 'thread',
+  }),
+  replies: many(channelMessages, { relationName: 'thread' }),
 }));

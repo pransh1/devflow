@@ -10,6 +10,7 @@ import authRoutes from './modules/auth/auth.routes';
 import workspaceRoutes from './modules/workspace/workspace.routes';
 import issuesRoutes from './modules/issues/issues.routes';
 import uploadsRoutes from './modules/uploads/uploads.routes';
+import chatRoutes from './modules/chat/chat.routes';
 
 const app: Application = express();
 
@@ -42,6 +43,7 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/workspaces', workspaceRoutes);
 app.use('/api/v1/workspaces/:workspaceId', issuesRoutes);
 app.use('/api/v1', uploadsRoutes);
+app.use('/api/v1/workspaces/:workspaceId', chatRoutes);
 
 // 404 handler — catches any route we haven't defined
 app.use((_req: Request, res: Response) => {

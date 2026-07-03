@@ -111,6 +111,21 @@ export function initSocketServer(httpServer: HttpServer): SocketServer {
       });
     });
 
+    // ── Channel typing indicator ─────────────────────────
+    socket.on('channel:typing', ({
+      workspaceId,
+      channelId
+    }: {
+      workspaceId: string;
+      channelId: string
+    }) => {
+      socket.to(`workspace:${workspaceId}`).emit('channel:typing', {
+        userId: authSocket.userId,
+        channelId,
+        timestamp: new Date().toISOString(),
+      });
+    });
+
     // ── Disconnect ───────────────────────────────────────
     socket.on('disconnect', () => {
       console.log(`🔌 User disconnected: ${authSocket.userId}`);

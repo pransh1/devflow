@@ -42,9 +42,9 @@
       const token = document.getElementById('token').value;
       if (!token) return log('⚠️ Paste a token first', '#ffff00');
 
-      socket = io('http://127.0.0.1:5454', {  // ✅ match the browser's origin
+      socket = io('http://127.0.0.1:5454', {  // match the browser's origin
       auth: { token },
-      transports: ['websocket', 'polling'],  // ✅ explicitly set transports
+      transports: ['websocket', 'polling'],  // explicitly set transports
     });
 
       socket.on('connect', () => log('✅ Connected! Socket ID: ' + socket.id, '#00ff00'));

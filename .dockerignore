@@ -1,0 +1,11 @@
+node_modules
+dist
+.env
+.env.example
+*.log
+uploads/
+src/tests/
+drizzle.config.ts
+README.md
+.git
+.gitignore

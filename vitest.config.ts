@@ -5,7 +5,8 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     fileParallelism: false,
-    globalSetup: 'src/tests/globalSetup.ts',  // ✅ add this
+    globalSetup: 'src/tests/globalSetup.ts',
+    include: ['src/tests/**/*.test.ts'],  // explicit path
     sequence: {
       shuffle: false,
     },

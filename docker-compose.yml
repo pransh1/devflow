@@ -1,7 +1,7 @@
 services:
   # ── PostgreSQL ───────────────────────────────────────────────
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     container_name: devflow_postgres
     restart: unless-stopped
     environment:
@@ -68,6 +68,28 @@ services:
         condition: service_healthy  # wait for redis to be ready
     volumes:
       - ./src/db/migrations:/app/src/db/migrations  # mount migrations
+
+
+  # ── AI services ──────────────────────────────────────────────────
+  ai-service:
+      build:
+        context: ./ai-service
+        dockerfile: Dockerfile
+      container_name: devflow_ai
+      restart: unless-stopped
+      ports:
+        - "8000:8000"
+      environment:
+        DATABASE_URL: postgresql://devflow:devflow_password@postgres:5432/devflow
+        OPENAI_API_KEY: ${OPENAI_API_KEY}
+        ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+        NODE_API_URL: http://api:5000
+        NODE_API_INTERNAL_SECRET: ${NODE_API_INTERNAL_SECRET}
+      depends_on:
+        postgres:
+          condition: service_healthy
+
+
 
 # ── Volumes ──────────────────────────────────────────────────
 volumes:

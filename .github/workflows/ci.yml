@@ -57,6 +57,8 @@ jobs:
       SMTP_USER: test@ethereal.email
       SMTP_PASS: testpass
       EMAIL_FROM: DevFlow <noreply@devflow.com>
+      NODE_API_INTERNAL_SECRET: test_internal_secret_for_ci
+      AI_SERVICE_URL: http://localhost:8000
 
     steps:
       - name: Checkout code

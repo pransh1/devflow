@@ -12,6 +12,10 @@ import issuesRoutes from './modules/issues/issues.routes';
 import uploadsRoutes from './modules/uploads/uploads.routes';
 import chatRoutes from './modules/chat/chat.routes';
 
+// Ai routes
+import internalRoutes from './modules/internal/internal.routes';
+import aiRoutes from './modules/ai/ai.routes';
+
 const app: Application = express();
 
 // security & parsing middleware
@@ -44,6 +48,8 @@ app.use('/api/v1/workspaces', workspaceRoutes);
 app.use('/api/v1/workspaces/:workspaceId', issuesRoutes);
 app.use('/api/v1', uploadsRoutes);
 app.use('/api/v1/workspaces/:workspaceId', chatRoutes);
+app.use('/api/internal', internalRoutes);
+app.use('/api/v1/workspaces/:workspaceId/ai', aiRoutes);
 
 // 404 handler — catches any route we haven't defined
 app.use((_req: Request, res: Response) => {

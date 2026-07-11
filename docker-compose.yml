@@ -85,6 +85,8 @@ services:
         ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
         NODE_API_URL: http://api:5000
         NODE_API_INTERNAL_SECRET: ${NODE_API_INTERNAL_SECRET}
+        EMBEDDING_MODEL: text-embedding-3-small
+        EMBEDDING_DIMENSIONS: "1536"
       depends_on:
         postgres:
           condition: service_healthy

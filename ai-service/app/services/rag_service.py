@@ -45,7 +45,7 @@ def summarize_issue(db: Session, request: SummarizeRequest) -> str:
     # Fetch issue content from Node API
     with httpx.Client() as client:
         response = client.get(
-            f"{settings.node_api_url}/api/v1/internal/issues/{request.resource_id}",
+            f"{settings.node_api_url}/api/internal/issues/{request.resource_id}",
             headers={"x-internal-secret": settings.node_api_internal_secret},
         )
 

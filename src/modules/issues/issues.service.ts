@@ -12,6 +12,10 @@ import type {
   ListIssuesInput,
 } from './issues.schema';
 
+// AI imports
+import { embedContent } from '../../services/ai.service';
+
+
 // ─── Projects ────────────────────────────────────────────────
 
 export async function createProject(
@@ -101,6 +105,14 @@ export async function createIssue(
     createdById: userId, 
     dueDate: input.dueDate ? new Date(input.dueDate) : undefined, 
   }).returning();
+
+  // Embed issue for semantic search — fire and forget
+  embedContent({
+    text: `${issue.title}\n\n${issue.description || ''}`,
+    resource_type: 'issue',
+    resource_id: issue.id,
+    workspace_id: workspaceId
+  });
 
   // Emit to all workspace members in real-time
   emitToWorkspace(workspaceId, 'issue:created', {
@@ -223,6 +235,16 @@ export async function updateIssue(issueId: string, workspaceId: string, input: U
   // bust issue cache so next fetch is fresh
   await deleteCache(CacheKeys.issue(issueId));
 
+  // Re-embed if title or description changed
+  if (input.title || input.description) {
+    embedContent({
+      text: `${updated.title}\n\n${updated.description || ''}`,
+      resource_type: 'issue',
+      resource_id: issueId,
+      workspace_id: workspaceId,
+    });
+  }
+
   // Emit update to workspace
   emitToWorkspace(workspaceId, 'issue:updated', {
     issue: updated,
@@ -283,6 +305,14 @@ export async function addComment(
 
   // bust issue cache since comments changed
   await deleteCache(CacheKeys.issue(issueId));
+
+  // Embed comment
+  embedContent({
+    text: content,
+    resource_type: 'comment',
+    resource_id: comment.id,
+    workspace_id: workspaceId
+  });
 
   // Emit new comment to workspace
   emitToWorkspace(workspaceId, 'comment:created', {

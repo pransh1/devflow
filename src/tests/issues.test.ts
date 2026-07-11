@@ -21,6 +21,13 @@ vi.mock('../config/redis', () => ({
   },
 }));
 
+vi.mock('../services/ai.service', () => ({
+  embedContent: vi.fn().mockResolvedValue(true),
+  searchSimilar: vi.fn().mockResolvedValue([]),
+  chatWithAI: vi.fn().mockResolvedValue({ message: '', sources: [] }),
+  summarizeIssue: vi.fn().mockResolvedValue(''),
+}));
+
 let token: string;
 let userId: string;
 let workspaceId: string;

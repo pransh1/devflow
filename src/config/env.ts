@@ -39,4 +39,7 @@ export const config = {
     apiKey: requireEnv('CLOUDINARY_API_KEY'),
     apiSecret: requireEnv('CLOUDINARY_API_SECRET'),
   },
+  internal: {
+    secret: process.env.NODE_API_INTERNAL_SECRET || 'gGm5qGX2myup0QLGGy9Y3BOYRbdNCmyydZjqDU0AwR4',
+  }
 } as const;

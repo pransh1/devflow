@@ -8,6 +8,7 @@ import { useWorkspaceSocket } from '@/lib/useWorkspaceSocket';
 import { getChannels, createChannel, getMessages, sendMessage } from '@/lib/chat';
 import type { Channel, ChatMessage } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
+import NewChannelModal from '@/components/NewChannelModal';
 
 export default function ChatPage() {
   const { currentWorkspace } = useWorkspaceStore();
@@ -19,6 +20,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
+  const [showNewChannel, setShowNewChannel] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -100,17 +102,20 @@ export default function ChatPage() {
     await sendMessage(currentWorkspace.id, activeChannel.id, content);
   }
 
-  async function handleCreateChannel() {
-    if (!currentWorkspace) return;
-    const name = prompt('Channel name (lowercase, no spaces):');
-    if (!name) return;
-    const channel = await createChannel(currentWorkspace.id, { name });
-    // setChannels((prev) => [...prev, channel]);
-    setChannels((prev) => {
-      if (prev.some((c) => c.id === channel.id)) return prev;
-      return [...prev, channel];
-    });
-    setActiveChannel(channel);
+  // async function handleCreateChannel() {
+  //   if (!currentWorkspace) return;
+  //   const name = prompt('Channel name (lowercase, no spaces):');
+  //   if (!name) return;
+  //   const channel = await createChannel(currentWorkspace.id, { name });
+  //   // setChannels((prev) => [...prev, channel]);
+  //   setChannels((prev) => {
+  //     if (prev.some((c) => c.id === channel.id)) return prev;
+  //     return [...prev, channel];
+  //   });
+  //   setActiveChannel(channel);
+  // }
+  function handleCreateChannel() {
+    setShowNewChannel(true);
   }
 
   if (!currentWorkspace) return null;
@@ -130,11 +135,10 @@ export default function ChatPage() {
             <button
               key={ch.id}
               onClick={() => setActiveChannel(ch)}
-              className={`flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-sm ${
-                activeChannel?.id === ch.id
+              className={`flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-sm ${activeChannel?.id === ch.id
                   ? 'bg-zinc-800 text-zinc-100'
                   : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200'
-              }`}
+                }`}
             >
               <Hash className="h-3.5 w-3.5" />
               {ch.name}
@@ -221,6 +225,20 @@ export default function ChatPage() {
               </button>
             </div>
           </div>
+        )}
+        {showNewChannel && currentWorkspace && (
+          <NewChannelModal
+            workspaceId={currentWorkspace.id}
+            onClose={() => setShowNewChannel(false)}
+            onCreated={(channel) => {
+              setChannels((prev) => {
+                if (prev.some((c) => c.id === channel.id)) return prev;
+                return [...prev, channel];
+              });
+              setActiveChannel(channel);
+              setShowNewChannel(false);
+            }}
+          />
         )}
       </div>
     </div>

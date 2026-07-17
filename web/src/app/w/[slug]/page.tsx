@@ -8,6 +8,7 @@ import { listIssues, createIssue, updateIssue } from '@/lib/issues';
 import { STATUS_COLUMNS, PRIORITY_CONFIG } from '@/lib/constants';
 import type { Project, Issue, IssueStatus } from '@/types';
 import IssueDetailPanel from '@/components/IssueDetailPanel';
+import NewProjectModal from '@/components/NewProjectModal';
 
 export default function IssuesBoardPage() {
   const { currentWorkspace } = useWorkspaceStore();
@@ -16,6 +17,7 @@ export default function IssuesBoardPage() {
   const [issues, setIssues] = useState<Issue[]>([]);
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
   const [showNewIssue, setShowNewIssue] = useState<IssueStatus | null>(null);
+  const [showNewProject, setShowNewProject] = useState(false);
 
   useEffect(() => {
     if (!currentWorkspace) return;
@@ -30,21 +32,24 @@ export default function IssuesBoardPage() {
     const res = await listIssues(currentWorkspace.id, activeProject.id, { limit: 100 });
     setIssues(res.data);
   }
-  
+
   useEffect(() => {
     if (!currentWorkspace || !activeProject) return;
     loadIssues();
   }, [currentWorkspace, activeProject]);
 
 
-  async function handleCreateProject() {
-    if (!currentWorkspace) return;
-    const name = prompt('Project name:');
-    if (!name) return;
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    const project = await createProject(currentWorkspace.id, { name, slug });
-    setProjects((prev) => [...prev, project]);
-    setActiveProject(project);
+  // async function handleCreateProject() {
+  //   if (!currentWorkspace) return;
+  //   const name = prompt('Project name:');
+  //   if (!name) return;
+  //   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  //   const project = await createProject(currentWorkspace.id, { name, slug });
+  //   setProjects((prev) => [...prev, project]);
+  //   setActiveProject(project);
+  // }
+  function handleCreateProject() {
+    setShowNewProject(true);
   }
 
   async function handleStatusChange(issue: Issue, newStatus: IssueStatus) {
@@ -64,11 +69,10 @@ export default function IssuesBoardPage() {
             <button
               key={p.id}
               onClick={() => setActiveProject(p)}
-              className={`rounded-md px-3 py-1.5 text-sm ${
-                activeProject?.id === p.id
+              className={`rounded-md px-3 py-1.5 text-sm ${activeProject?.id === p.id
                   ? 'bg-zinc-800 text-zinc-100'
                   : 'text-zinc-400 hover:text-zinc-200'
-              }`}
+                }`}
             >
               {p.name}
             </button>
@@ -165,6 +169,17 @@ export default function IssuesBoardPage() {
             setSelectedIssue(updated);
           }}
           onStatusChange={handleStatusChange}
+        />
+      )}
+      {showNewProject && currentWorkspace && (
+        <NewProjectModal
+          workspaceId={currentWorkspace.id}
+          onClose={() => setShowNewProject(false)}
+          onCreated={(project) => {
+            setProjects((prev) => [...prev, project]);
+            setActiveProject(project);
+            setShowNewProject(false);
+          }}
         />
       )}
     </div>

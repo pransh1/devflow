@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { LayoutGrid, MessageSquare, Sparkles, LogOut } from 'lucide-react';
+import { LayoutGrid, MessageSquare, Sparkles, LogOut, Users } from 'lucide-react';
 import { useAuthGuard } from '@/lib/useAuthGuard';
 import { useAuthStore } from '@/store/auth.store';
 import { useWorkspaceStore } from '@/store/workspace.store';
@@ -33,6 +33,7 @@ export default function WorkspaceLayout({ children }: { children: React.ReactNod
     { label: 'Issues', href: `/w/${slug}`, icon: LayoutGrid },
     { label: 'Chat', href: `/w/${slug}/chat`, icon: MessageSquare },
     { label: 'AI Assistant', href: `/w/${slug}/ai`, icon: Sparkles },
+    { label: 'Members', href: `/w/${slug}/members`, icon: Users }, 
   ];
 
   return (

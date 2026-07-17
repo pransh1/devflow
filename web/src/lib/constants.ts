@@ -16,3 +16,6 @@ export const PRIORITY_CONFIG: Record<IssuePriority, { label: string; color: stri
   low: { label: 'Low', color: 'text-blue-400' },
   no_priority: { label: 'No priority', color: 'text-zinc-500' },
 };
+
+export const INPUT_CLASS =
+  'w-full rounded-md border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-100 outline-none focus:border-zinc-600 placeholder:text-zinc-600';
